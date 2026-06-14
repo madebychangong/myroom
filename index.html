@@ -1,0 +1,1817 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>이사 방별 배치판</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --ink: #1b1f24;
+      --muted: #68707c;
+      --line: #d8dee7;
+      --accent: #168a72;
+      --accent-dark: #0f6654;
+      --danger: #c03a32;
+      --cell: 40px;
+      --shadow: 0 18px 48px rgba(30, 43, 57, 0.14);
+      font-family: Pretendard, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      transition: background 140ms ease, border-color 140ms ease, transform 120ms ease;
+    }
+
+    button:hover {
+      border-color: #aeb9c8;
+      background: #f8fafc;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    button.primary:hover {
+      border-color: var(--accent-dark);
+      background: var(--accent-dark);
+    }
+
+    button.danger {
+      color: var(--danger);
+    }
+
+    .app {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(14px);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: #1d2c34;
+      color: #fff;
+      font-weight: 800;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .top-actions,
+    .icon-row,
+    .preset-grid,
+    .swatches,
+    .segmented {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tool-button,
+    .icon-button {
+      min-height: 36px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 0 11px;
+      white-space: nowrap;
+    }
+
+    .icon-button {
+      width: 36px;
+      padding: 0;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 308px minmax(0, 1fr) 292px;
+      min-height: 0;
+    }
+
+    .side {
+      border-right: 1px solid var(--line);
+      background: var(--panel);
+      overflow: auto;
+      padding: 14px;
+    }
+
+    .side.right {
+      border-right: 0;
+      border-left: 1px solid var(--line);
+    }
+
+    .section {
+      padding: 0 0 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section:last-child {
+      border-bottom: 0;
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    .tiny {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+
+    .field label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: #323941;
+      font-size: 13px;
+    }
+
+    .field input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .text-input,
+    .number-input {
+      min-height: 36px;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      padding: 7px 9px;
+    }
+
+    .number-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 38px;
+      color: #323941;
+      font-size: 13px;
+    }
+
+    .toggle input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+    }
+
+    .room-tabs {
+      display: grid;
+      gap: 8px;
+    }
+
+    .room-tab {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 8px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      text-align: left;
+    }
+
+    .room-tab strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 14px;
+    }
+
+    .room-tab span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .room-tab.active {
+      border-color: var(--accent);
+      background: #eef9f5;
+      box-shadow: inset 4px 0 0 var(--accent);
+    }
+
+    .preset-grid {
+      align-items: stretch;
+    }
+
+    .preset {
+      min-height: 40px;
+      flex: 1 1 calc(50% - 8px);
+      justify-content: flex-start;
+      border-radius: 8px;
+      padding: 0 9px;
+      font-size: 13px;
+      overflow: hidden;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      background: var(--dot, #8ba4bd);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+    }
+
+    .canvas-shell {
+      min-width: 0;
+      min-height: 0;
+      overflow: auto;
+      background:
+        linear-gradient(90deg, rgba(27, 31, 36, 0.04) 1px, transparent 1px),
+        linear-gradient(rgba(27, 31, 36, 0.04) 1px, transparent 1px),
+        #eef2f7;
+      background-size: 28px 28px;
+      padding: 24px;
+    }
+
+    .rooms-overview {
+      position: relative;
+      min-width: 760px;
+      min-height: 560px;
+    }
+
+    .room-wrap {
+      position: absolute;
+      left: var(--board-x);
+      top: var(--board-y);
+      display: block;
+    }
+
+    .rooms-overview.hide-room-borders .room {
+      border-color: transparent;
+      box-shadow: 0 8px 20px rgba(23, 38, 50, 0.08);
+    }
+
+    .rooms-overview.hide-room-borders .room::before {
+      box-shadow: none;
+    }
+
+    .room-wrap.active .room {
+      outline: 3px solid rgba(22, 138, 114, 0.55);
+      outline-offset: 2px;
+      box-shadow: 0 14px 32px rgba(27, 52, 48, 0.16);
+    }
+
+    .room-head {
+      position: absolute;
+      left: 8px;
+      top: 8px;
+      z-index: 90;
+      width: max-content;
+      max-width: calc(100% - 16px);
+      min-height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 3px 8px;
+      border: 1px solid rgba(216, 222, 231, 0.9);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: 0 4px 10px rgba(23, 38, 50, 0.08);
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .room-head:active {
+      cursor: grabbing;
+    }
+
+    .room-head strong {
+      color: var(--ink);
+      font-size: 14px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .room {
+      position: relative;
+      width: calc(var(--room-w) * var(--cell));
+      height: calc(var(--room-h) * var(--cell));
+      min-width: calc(var(--room-w) * var(--cell));
+      min-height: calc(var(--room-h) * var(--cell));
+      background: #fff;
+      border: 4px solid #26343d;
+      border-radius: 4px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .room.grid-on {
+      background-image:
+        linear-gradient(to right, rgba(38, 52, 61, 0.12) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(38, 52, 61, 0.12) 1px, transparent 1px);
+      background-size: var(--cell) var(--cell);
+    }
+
+    .room::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.75);
+      z-index: 1;
+    }
+
+    .item {
+      position: absolute;
+      left: calc(var(--x) * var(--cell));
+      top: calc(var(--y) * var(--cell));
+      width: calc(var(--w) * var(--cell));
+      height: calc(var(--h) * var(--cell));
+      z-index: var(--z);
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      border: 2px solid rgba(20, 29, 36, 0.4);
+      background: var(--color);
+      color: #111820;
+      font-size: clamp(11px, calc(var(--cell) * 0.28), 15px);
+      font-weight: 750;
+      text-align: center;
+      padding: 4px;
+      user-select: none;
+      box-shadow: 0 8px 18px rgba(23, 38, 50, 0.12);
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .item span {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .item.selected {
+      outline: 3px solid #111820;
+      outline-offset: 2px;
+      box-shadow: 0 12px 26px rgba(23, 38, 50, 0.2);
+    }
+
+    .resize-handle {
+      position: absolute;
+      right: 2px;
+      bottom: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 5px;
+      background:
+        linear-gradient(135deg, transparent 0 45%, rgba(17, 24, 32, 0.65) 45% 55%, transparent 55%),
+        rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(17, 24, 32, 0.25);
+      cursor: nwse-resize;
+    }
+
+    .room-size-handle {
+      position: absolute;
+      right: 4px;
+      bottom: 4px;
+      width: 20px;
+      height: 20px;
+      z-index: 80;
+      border-radius: 6px;
+      background:
+        linear-gradient(135deg, transparent 0 45%, rgba(17, 24, 32, 0.72) 45% 55%, transparent 55%),
+        rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(17, 24, 32, 0.28);
+      cursor: nwse-resize;
+    }
+
+    body.resize-locked .resize-handle,
+    body.resize-locked .room-size-handle {
+      display: none;
+    }
+
+    .empty-state {
+      display: grid;
+      place-items: center;
+      min-height: 190px;
+      border: 1px dashed #b8c2ce;
+      border-radius: 8px;
+      color: var(--muted);
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
+      line-height: 1.5;
+      background: #fafbfd;
+    }
+
+    .swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid rgba(17, 24, 32, 0.18);
+      background: var(--swatch);
+      padding: 0;
+    }
+
+    .swatch.active {
+      outline: 3px solid #111820;
+      outline-offset: 2px;
+    }
+
+    .segmented button {
+      min-height: 34px;
+      flex: 1 1 74px;
+      border-radius: 8px;
+      padding: 0 8px;
+      font-size: 13px;
+    }
+
+    .segmented button.active {
+      background: #1d2c34;
+      color: #fff;
+      border-color: #1d2c34;
+    }
+
+    .nudge-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 38px);
+      grid-template-rows: repeat(3, 34px);
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .nudge-pad .blank {
+      visibility: hidden;
+    }
+
+    .nudge-pad button {
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      margin: 8px 0 0;
+    }
+
+    @media (max-width: 1080px) {
+      .workspace {
+        grid-template-columns: 280px minmax(0, 1fr);
+      }
+
+      .side.right {
+        grid-column: 1 / -1;
+        border-left: 0;
+        border-top: 1px solid var(--line);
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .side.right .section {
+        margin: 0;
+        padding: 0;
+        border: 0;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .top-actions {
+        width: 100%;
+      }
+
+      .tool-button {
+        flex: 1 1 auto;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .side,
+      .side.right {
+        border: 0;
+        border-bottom: 1px solid var(--line);
+        max-height: none;
+      }
+
+      .canvas-shell {
+        order: -1;
+      }
+
+      .side.right {
+        display: block;
+      }
+
+      .canvas-shell {
+        min-height: 60vh;
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">□</div>
+        <div>
+          <h1>이사 방별 배치판</h1>
+          <div class="status" id="saveStatus">준비됨</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="tool-button" id="newPlanBtn" title="전체 새로 시작">새로</button>
+        <button class="tool-button primary" id="saveBtn" title="현재 상태 저장">저장</button>
+        <button class="tool-button" id="exportBtn" title="현재 방 PNG 저장">PNG</button>
+        <button class="tool-button" id="jsonBtn" title="전체 방 데이터 복사">JSON</button>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside class="side" aria-label="배치 도구">
+        <section class="section">
+          <div class="section-title">
+            <h2>방 목록</h2>
+            <span class="tiny" id="roomCountText"></span>
+          </div>
+          <div class="room-tabs" id="roomList"></div>
+          <div class="icon-row" style="margin-top: 10px;">
+            <button class="tool-button primary" id="addRoomBtn">방 추가</button>
+            <button class="tool-button" id="copyRoomBtn">복제</button>
+            <button class="tool-button danger" id="deleteRoomBtn">삭제</button>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">
+            <h2>방 설정</h2>
+            <span class="tiny">방마다 따로</span>
+          </div>
+
+          <div class="field">
+            <label for="activeRoomName">방 이름</label>
+            <input id="activeRoomName" class="text-input" maxlength="16">
+          </div>
+
+          <div class="field">
+            <label for="roomWidth">가로 <output id="roomWidthValue"></output></label>
+            <input id="roomWidth" type="range" min="4" max="24" step="1">
+          </div>
+
+          <div class="field">
+            <label for="roomHeight">세로 <output id="roomHeightValue"></output></label>
+            <input id="roomHeight" type="range" min="4" max="20" step="1">
+          </div>
+
+          <div class="field">
+            <label for="zoomRange">확대 <output id="zoomValue"></output></label>
+            <input id="zoomRange" type="range" min="16" max="56" step="2">
+          </div>
+
+          <div class="segmented" role="group" aria-label="방 모양">
+            <button data-room-preset="8,8">작은방</button>
+            <button data-room-preset="12,9">침실</button>
+            <button data-room-preset="16,10">거실</button>
+          </div>
+
+          <label class="toggle">
+            <span>격자</span>
+            <input id="gridToggle" type="checkbox">
+          </label>
+        </section>
+
+        <section class="section">
+          <div class="section-title">
+            <h2>작업판</h2>
+            <span class="tiny">전체 적용</span>
+          </div>
+          <label class="toggle">
+            <span>방끼리 붙이기</span>
+            <input id="snapToggle" type="checkbox">
+          </label>
+          <label class="toggle">
+            <span>방 테두리</span>
+            <input id="borderToggle" type="checkbox">
+          </label>
+          <label class="toggle">
+            <span>마우스 크기조절 잠금</span>
+            <input id="resizeLockToggle" type="checkbox">
+          </label>
+        </section>
+
+        <section class="section">
+          <div class="section-title">
+            <h2>가구</h2>
+            <span class="tiny">현재 방에 추가</span>
+          </div>
+          <div class="preset-grid" id="presetGrid"></div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">
+            <h2>내 가구</h2>
+          </div>
+          <div class="field">
+            <label for="customName">이름</label>
+            <input id="customName" class="text-input" value="새 가구" maxlength="16">
+          </div>
+          <div class="number-row">
+            <div class="field">
+              <label for="customW">가로</label>
+              <input id="customW" class="number-input" type="number" min="1" max="12" value="3">
+            </div>
+            <div class="field">
+              <label for="customH">세로</label>
+              <input id="customH" class="number-input" type="number" min="1" max="12" value="2">
+            </div>
+          </div>
+          <button class="tool-button primary" id="customAddBtn">추가</button>
+        </section>
+      </aside>
+
+      <section class="canvas-shell" aria-label="방별 배치판 전체">
+        <div class="rooms-overview" id="roomsOverview"></div>
+      </section>
+
+      <aside class="side right" aria-label="선택한 가구">
+        <section class="section" id="selectionPanel">
+          <div class="section-title">
+            <h2>선택</h2>
+            <span class="tiny" id="selectionType">없음</span>
+          </div>
+          <div id="emptySelection" class="empty-state">
+            현재 방의 가구를 선택하면 이름, 색, 크기를 바꿀 수 있어요.
+          </div>
+          <div id="editorFields" hidden>
+            <div class="field">
+              <label for="itemName">이름</label>
+              <input id="itemName" class="text-input" maxlength="16">
+            </div>
+            <div class="number-row">
+              <div class="field">
+                <label for="itemW">가로</label>
+                <input id="itemW" class="number-input" type="number" min="1" max="24">
+              </div>
+              <div class="field">
+                <label for="itemH">세로</label>
+                <input id="itemH" class="number-input" type="number" min="1" max="20">
+              </div>
+            </div>
+            <div class="field">
+              <label>색</label>
+              <div class="swatches" id="swatches"></div>
+            </div>
+            <div class="icon-row">
+              <button class="icon-button" id="rotateBtn" title="회전">↻</button>
+              <button class="icon-button" id="duplicateBtn" title="복제">⧉</button>
+              <button class="icon-button danger" id="deleteBtn" title="삭제">×</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">
+            <h2>이동</h2>
+            <span class="tiny">한 칸씩</span>
+          </div>
+          <div class="nudge-pad">
+            <span class="blank"></span>
+            <button data-nudge="0,-1" title="위">↑</button>
+            <span class="blank"></span>
+            <button data-nudge="-1,0" title="왼쪽">←</button>
+            <button data-nudge="0,0" id="centerBtn" title="가운데">•</button>
+            <button data-nudge="1,0" title="오른쪽">→</button>
+            <span class="blank"></span>
+            <button data-nudge="0,1" title="아래">↓</button>
+            <span class="blank"></span>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">
+            <h2>정리</h2>
+          </div>
+          <div class="icon-row">
+            <button class="tool-button" id="clearItemsBtn">이 방 비우기</button>
+            <button class="tool-button" id="fitAllBtn">보기 맞춤</button>
+          </div>
+          <p class="hint">방 목록과 각 방의 배치는 이 브라우저에 자동 저장됩니다.</p>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "moving-room-layout-v3";
+    const LEGACY_KEYS = ["moving-room-layout-v1", "moving-room-layout-v2"];
+    const ROOM_RECT_OFFSET_X = 0;
+    const ROOM_RECT_OFFSET_Y = 0;
+
+    const colors = [
+      "#ffd166",
+      "#9ad5ca",
+      "#f49cbb",
+      "#9eb8ff",
+      "#c7e77a",
+      "#ffb37c",
+      "#cdb4db",
+      "#d7dee8"
+    ];
+
+    const presets = [
+      { name: "침대", w: 4, h: 5, color: "#9eb8ff" },
+      { name: "책상", w: 3, h: 2, color: "#ffd166" },
+      { name: "옷장", w: 3, h: 2, color: "#9ad5ca" },
+      { name: "소파", w: 4, h: 2, color: "#f49cbb" },
+      { name: "식탁", w: 3, h: 3, color: "#ffb37c" },
+      { name: "TV", w: 3, h: 1, color: "#d7dee8" },
+      { name: "냉장고", w: 2, h: 2, color: "#c7e77a" },
+      { name: "세탁기", w: 2, h: 2, color: "#cdb4db" },
+      { name: "문", w: 2, h: 1, color: "#ffe9a8" },
+      { name: "창", w: 3, h: 1, color: "#b8e5ff" },
+      { name: "러그", w: 4, h: 3, color: "#e8d9c2" },
+      { name: "비워둘 곳", w: 2, h: 2, color: "#e2e7ef" }
+    ];
+
+    const state = {
+      rooms: defaultRooms(),
+      settings: {
+        snapRooms: true,
+        showRoomBorders: true,
+        resizeLocked: false
+      },
+      activeRoomId: null,
+      selectedId: null
+    };
+    state.activeRoomId = state.rooms[0].id;
+
+    const els = {
+      roomList: document.getElementById("roomList"),
+      roomCountText: document.getElementById("roomCountText"),
+      activeRoomName: document.getElementById("activeRoomName"),
+      addRoomBtn: document.getElementById("addRoomBtn"),
+      copyRoomBtn: document.getElementById("copyRoomBtn"),
+      deleteRoomBtn: document.getElementById("deleteRoomBtn"),
+      roomsOverview: document.getElementById("roomsOverview"),
+      roomWidth: document.getElementById("roomWidth"),
+      roomHeight: document.getElementById("roomHeight"),
+      roomWidthValue: document.getElementById("roomWidthValue"),
+      roomHeightValue: document.getElementById("roomHeightValue"),
+      zoomRange: document.getElementById("zoomRange"),
+      zoomValue: document.getElementById("zoomValue"),
+      gridToggle: document.getElementById("gridToggle"),
+      snapToggle: document.getElementById("snapToggle"),
+      borderToggle: document.getElementById("borderToggle"),
+      resizeLockToggle: document.getElementById("resizeLockToggle"),
+      presetGrid: document.getElementById("presetGrid"),
+      customName: document.getElementById("customName"),
+      customW: document.getElementById("customW"),
+      customH: document.getElementById("customH"),
+      customAddBtn: document.getElementById("customAddBtn"),
+      itemName: document.getElementById("itemName"),
+      itemW: document.getElementById("itemW"),
+      itemH: document.getElementById("itemH"),
+      swatches: document.getElementById("swatches"),
+      emptySelection: document.getElementById("emptySelection"),
+      editorFields: document.getElementById("editorFields"),
+      selectionType: document.getElementById("selectionType"),
+      rotateBtn: document.getElementById("rotateBtn"),
+      duplicateBtn: document.getElementById("duplicateBtn"),
+      deleteBtn: document.getElementById("deleteBtn"),
+      clearItemsBtn: document.getElementById("clearItemsBtn"),
+      fitAllBtn: document.getElementById("fitAllBtn"),
+      newPlanBtn: document.getElementById("newPlanBtn"),
+      saveBtn: document.getElementById("saveBtn"),
+      exportBtn: document.getElementById("exportBtn"),
+      jsonBtn: document.getElementById("jsonBtn"),
+      saveStatus: document.getElementById("saveStatus"),
+      centerBtn: document.getElementById("centerBtn")
+    };
+
+    let drag = null;
+    let saveTimer = null;
+
+    load();
+    buildPresetButtons();
+    buildSwatches();
+    bindEvents();
+    render();
+
+    function uid() {
+      return "i" + Math.random().toString(36).slice(2, 9);
+    }
+
+    function makeRoom(name, w, h, boardX, boardY, items = []) {
+      return {
+        id: uid(),
+        name,
+        w,
+        h,
+        boardX,
+        boardY,
+        cell: 22,
+        grid: true,
+        items
+      };
+    }
+
+    function defaultRooms() {
+      return [
+        makeRoom("거실", 16, 10, 0, 0, [
+          { id: uid(), name: "소파", x: 1, y: 6, w: 5, h: 2, color: "#f49cbb", z: 1 },
+          { id: uid(), name: "TV", x: 11, y: 1, w: 3, h: 1, color: "#d7dee8", z: 2 },
+          { id: uid(), name: "러그", x: 5, y: 4, w: 5, h: 3, color: "#e8d9c2", z: 3 }
+        ]),
+        makeRoom("안방", 12, 9, 395, 0, [
+          { id: uid(), name: "침대", x: 1, y: 1, w: 4, h: 5, color: "#9eb8ff", z: 1 },
+          { id: uid(), name: "옷장", x: 8, y: 1, w: 3, h: 2, color: "#9ad5ca", z: 2 },
+          { id: uid(), name: "문", x: 5, y: 8, w: 2, h: 1, color: "#ffe9a8", z: 3 }
+        ]),
+        makeRoom("작은방", 10, 8, 395, 250, [
+          { id: uid(), name: "책상", x: 1, y: 1, w: 3, h: 2, color: "#ffd166", z: 1 },
+          { id: uid(), name: "침대", x: 5, y: 2, w: 4, h: 5, color: "#9eb8ff", z: 2 }
+        ])
+      ];
+    }
+
+    function load() {
+      try {
+        const params = new URLSearchParams(location.search);
+        if (params.has("reset")) {
+          localStorage.removeItem(STORAGE_KEY);
+          LEGACY_KEYS.forEach((key) => localStorage.removeItem(key));
+          history.replaceState(null, "", location.pathname);
+          return;
+        }
+
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+        if (!saved || !Array.isArray(saved.rooms)) return;
+
+        state.rooms = normalizeRooms(saved.rooms);
+        state.settings = {
+          snapRooms: saved.settings?.snapRooms !== false,
+          showRoomBorders: saved.settings?.showRoomBorders !== false,
+          resizeLocked: saved.settings?.resizeLocked === true
+        };
+        state.activeRoomId = saved.activeRoomId || state.rooms[0].id;
+        state.selectedId = saved.selectedId || null;
+
+        if (!activeRoom()) state.activeRoomId = state.rooms[0].id;
+        if (!selectedItem()) state.selectedId = null;
+      } catch (error) {
+        console.warn(error);
+      }
+    }
+
+    function normalizeRooms(rooms) {
+      const normalized = rooms
+        .filter((room) => room && room.name)
+        .map((room, roomIndex) => {
+          const position = defaultBoardPosition(roomIndex);
+          const width = clamp(Number(room.w) || 10, 4, 24);
+          const height = clamp(Number(room.h) || 8, 4, 20);
+          return {
+            id: room.id || uid(),
+            name: String(room.name).slice(0, 16),
+            w: width,
+            h: height,
+            boardX: clamp(Number(room.boardX ?? position.x) || 0, 0, 4000),
+            boardY: clamp(Number(room.boardY ?? position.y) || 0, 0, 4000),
+            cell: clamp(Number(room.cell) || 22, 16, 56),
+            grid: room.grid !== false,
+            items: Array.isArray(room.items) ? room.items
+            .filter((item) => item && item.name !== undefined)
+            .map((item, itemIndex) => ({
+              id: item.id || uid(),
+              name: String(item.name ?? "").slice(0, 16),
+              x: clamp(Number(item.x) || 0, 0, Math.max(0, width - 1)),
+              y: clamp(Number(item.y) || 0, 0, Math.max(0, height - 1)),
+              w: clamp(Number(item.w) || 1, 1, width),
+              h: clamp(Number(item.h) || 1, 1, height),
+              color: item.color || colors[itemIndex % colors.length],
+              z: Number(item.z) || itemIndex + 1
+            })) : [],
+            order: Number(room.order) || roomIndex
+          };
+        });
+
+      if (!normalized.length) return defaultRooms();
+      normalized.forEach((room) => room.items.forEach((item) => clampItemToRoom(item, room)));
+      return normalized;
+    }
+
+    function defaultBoardPosition(index) {
+      const positions = [
+        { x: 0, y: 0 },
+        { x: 395, y: 0 },
+        { x: 395, y: 250 },
+        { x: 0, y: 300 }
+      ];
+      if (positions[index]) return positions[index];
+      return {
+        x: (index % 3) * 360,
+        y: Math.floor(index / 3) * 300
+      };
+    }
+
+    function save() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        saveNow("자동 저장됨");
+      }, 150);
+    }
+
+    function saveNow(message = "저장됨") {
+      clearTimeout(saveTimer);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      els.saveStatus.textContent = message;
+    }
+
+    function activeRoom() {
+      return state.rooms.find((room) => room.id === state.activeRoomId) || state.rooms[0];
+    }
+
+    function roomById(id) {
+      return state.rooms.find((room) => room.id === id) || null;
+    }
+
+    function selectedItem() {
+      const room = activeRoom();
+      return room.items.find((item) => item.id === state.selectedId) || null;
+    }
+
+    function buildPresetButtons() {
+      els.presetGrid.innerHTML = "";
+      presets.forEach((preset) => {
+        const button = document.createElement("button");
+        button.className = "tool-button preset";
+        button.type = "button";
+        button.style.setProperty("--dot", preset.color);
+        button.innerHTML = '<span class="dot" aria-hidden="true"></span><span>' + preset.name + "</span>";
+        button.addEventListener("click", () => addItem(preset));
+        els.presetGrid.appendChild(button);
+      });
+    }
+
+    function buildSwatches() {
+      els.swatches.innerHTML = "";
+      colors.forEach((color) => {
+        const button = document.createElement("button");
+        button.className = "swatch";
+        button.type = "button";
+        button.title = color;
+        button.style.setProperty("--swatch", color);
+        button.addEventListener("click", () => {
+          const item = selectedItem();
+          if (!item) return;
+          item.color = color;
+          render();
+        });
+        els.swatches.appendChild(button);
+      });
+    }
+
+    function bindEvents() {
+      els.addRoomBtn.addEventListener("click", addRoom);
+      els.copyRoomBtn.addEventListener("click", duplicateRoom);
+      els.deleteRoomBtn.addEventListener("click", deleteActiveRoom);
+
+      els.activeRoomName.addEventListener("input", () => {
+        const room = activeRoom();
+        room.name = els.activeRoomName.value || "방";
+        render();
+      });
+
+      els.roomWidth.addEventListener("input", () => {
+        const room = activeRoom();
+        room.w = Number(els.roomWidth.value);
+        room.items.forEach((item) => clampItemToRoom(item, room));
+        render();
+      });
+
+      els.roomHeight.addEventListener("input", () => {
+        const room = activeRoom();
+        room.h = Number(els.roomHeight.value);
+        room.items.forEach((item) => clampItemToRoom(item, room));
+        render();
+      });
+
+      els.zoomRange.addEventListener("input", () => {
+        activeRoom().cell = Number(els.zoomRange.value);
+        render();
+      });
+
+      els.gridToggle.addEventListener("change", () => {
+        activeRoom().grid = els.gridToggle.checked;
+        render();
+      });
+
+      els.snapToggle.addEventListener("change", () => {
+        state.settings.snapRooms = els.snapToggle.checked;
+        render();
+      });
+
+      els.borderToggle.addEventListener("change", () => {
+        state.settings.showRoomBorders = els.borderToggle.checked;
+        render();
+      });
+
+      els.resizeLockToggle.addEventListener("change", () => {
+        state.settings.resizeLocked = els.resizeLockToggle.checked;
+        render();
+      });
+
+      document.querySelectorAll("[data-room-preset]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const room = activeRoom();
+          const [w, h] = button.dataset.roomPreset.split(",").map(Number);
+          room.w = w;
+          room.h = h;
+          room.items.forEach((item) => clampItemToRoom(item, room));
+          render();
+        });
+      });
+
+      els.customAddBtn.addEventListener("click", () => {
+        addItem({
+          name: els.customName.value.trim() || "새 가구",
+          w: clamp(Number(els.customW.value) || 3, 1, 12),
+          h: clamp(Number(els.customH.value) || 2, 1, 12),
+          color: colors[activeRoom().items.length % colors.length]
+        });
+      });
+
+      els.itemName.addEventListener("input", () => updateSelected({ name: els.itemName.value }));
+      els.itemW.addEventListener("input", () => updateSelected({ w: Number(els.itemW.value) || 1 }));
+      els.itemH.addEventListener("input", () => updateSelected({ h: Number(els.itemH.value) || 1 }));
+
+      els.rotateBtn.addEventListener("click", rotateSelected);
+      els.duplicateBtn.addEventListener("click", duplicateSelected);
+      els.deleteBtn.addEventListener("click", deleteSelected);
+
+      els.clearItemsBtn.addEventListener("click", () => {
+        const room = activeRoom();
+        if (!room.items.length) return;
+        if (!confirm("'" + room.name + "' 가구를 모두 지울까요?")) return;
+        room.items = [];
+        state.selectedId = null;
+        render();
+      });
+
+      els.fitAllBtn.addEventListener("click", () => {
+        const room = activeRoom();
+        const available = Math.min(window.innerWidth - 72, window.innerHeight - 210);
+        const cell = Math.floor(available / Math.max(room.w, room.h));
+        room.cell = clamp(cell, 16, 56);
+        render();
+      });
+
+      els.newPlanBtn.addEventListener("click", () => {
+        if (!confirm("전체 방 목록을 새로 시작할까요?")) return;
+        state.rooms = defaultRooms();
+        state.activeRoomId = state.rooms[0].id;
+        state.selectedId = null;
+        render();
+      });
+
+      els.saveBtn.addEventListener("click", () => saveNow("저장됨"));
+      els.exportBtn.addEventListener("click", exportPng);
+      els.jsonBtn.addEventListener("click", copyJson);
+
+      window.addEventListener("beforeunload", () => saveNow("저장됨"));
+
+      document.querySelectorAll("[data-nudge]").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.id === "centerBtn") {
+            centerSelected();
+            return;
+          }
+          const [dx, dy] = button.dataset.nudge.split(",").map(Number);
+          moveSelected(dx, dy);
+        });
+      });
+
+      document.addEventListener("pointermove", onPointerMove);
+      document.addEventListener("pointerup", onPointerUp);
+
+      document.addEventListener("keydown", (event) => {
+        if (event.target.matches("input, textarea, select")) return;
+        if (event.key === "Delete" || event.key === "Backspace") {
+          deleteSelected();
+        } else if (event.key === "r" || event.key === "R") {
+          rotateSelected();
+        } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "d") {
+          event.preventDefault();
+          duplicateSelected();
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault();
+          moveSelected(0, -1);
+        } else if (event.key === "ArrowDown") {
+          event.preventDefault();
+          moveSelected(0, 1);
+        } else if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          moveSelected(-1, 0);
+        } else if (event.key === "ArrowRight") {
+          event.preventDefault();
+          moveSelected(1, 0);
+        }
+      });
+
+    }
+
+    function render() {
+      const room = activeRoom();
+      document.body.classList.toggle("resize-locked", state.settings.resizeLocked);
+
+      renderRoomList();
+
+      els.activeRoomName.value = room.name;
+      els.roomWidth.value = room.w;
+      els.roomHeight.value = room.h;
+      els.zoomRange.value = room.cell;
+      els.gridToggle.checked = room.grid;
+      els.snapToggle.checked = state.settings.snapRooms;
+      els.borderToggle.checked = state.settings.showRoomBorders;
+      els.resizeLockToggle.checked = state.settings.resizeLocked;
+      els.roomWidthValue.value = room.w + "칸";
+      els.roomHeightValue.value = room.h + "칸";
+      els.zoomValue.value = room.cell + "px";
+
+      document.querySelectorAll("[data-room-preset]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.roomPreset === room.w + "," + room.h);
+      });
+
+      renderRoomBoards();
+      renderEditor();
+      save();
+    }
+
+    function renderRoomList() {
+      els.roomCountText.textContent = state.rooms.length + "개";
+      els.roomList.innerHTML = "";
+      state.rooms.forEach((room) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "room-tab" + (room.id === state.activeRoomId ? " active" : "");
+        button.innerHTML = "<span><strong></strong><span></span></span><span>" + room.items.length + "</span>";
+        button.querySelector("strong").textContent = room.name;
+        button.querySelector("span span").textContent = room.w + " x " + room.h + "칸";
+        button.title = room.name;
+        button.addEventListener("click", () => {
+          state.activeRoomId = room.id;
+          state.selectedId = null;
+          render();
+        });
+        els.roomList.appendChild(button);
+      });
+    }
+
+    function renderRoomBoards() {
+      els.roomsOverview.innerHTML = "";
+      const overviewSize = getOverviewSize();
+      els.roomsOverview.style.width = overviewSize.width + "px";
+      els.roomsOverview.style.height = overviewSize.height + "px";
+      els.roomsOverview.classList.toggle("hide-room-borders", !state.settings.showRoomBorders);
+
+      state.rooms.forEach((room) => {
+        const wrap = document.createElement("div");
+        wrap.className = "room-wrap" + (room.id === state.activeRoomId ? " active" : "");
+        wrap.dataset.roomId = room.id;
+        wrap.style.setProperty("--board-x", room.boardX + "px");
+        wrap.style.setProperty("--board-y", room.boardY + "px");
+
+        const head = document.createElement("div");
+        head.className = "room-head";
+        head.innerHTML = "<strong></strong><span></span>";
+        head.querySelector("strong").textContent = room.name;
+        head.querySelector("span").textContent = room.w + " x " + room.h + "칸 · " + room.items.length + "개";
+        head.addEventListener("pointerdown", (event) => startRoomDrag(event, room.id));
+        wrap.appendChild(head);
+
+        const board = document.createElement("div");
+        board.className = "room" + (room.grid ? " grid-on" : "");
+        board.tabIndex = 0;
+        board.setAttribute("aria-label", room.name + " 배치 영역");
+        board.style.setProperty("--cell", room.cell + "px");
+        board.style.setProperty("--room-w", room.w);
+        board.style.setProperty("--room-h", room.h);
+        board.addEventListener("pointerdown", (event) => {
+          if (event.target !== board) return;
+          state.activeRoomId = room.id;
+          state.selectedId = null;
+          render();
+        });
+
+        room.items
+          .slice()
+          .sort((a, b) => a.z - b.z)
+          .forEach((item) => appendItemNode(item, room, board));
+
+        const roomSizeHandle = document.createElement("button");
+        roomSizeHandle.type = "button";
+        roomSizeHandle.className = "room-size-handle";
+        roomSizeHandle.title = "방 크기 조절";
+        roomSizeHandle.setAttribute("aria-label", room.name + " 크기 조절");
+        roomSizeHandle.addEventListener("pointerdown", (event) => startRoomResize(event, room.id));
+        board.appendChild(roomSizeHandle);
+
+        wrap.appendChild(board);
+        els.roomsOverview.appendChild(wrap);
+      });
+    }
+
+    function getOverviewSize() {
+      return state.rooms.reduce((size, room) => ({
+        width: Math.max(size.width, room.boardX + roomPixelWidth(room) + 80),
+        height: Math.max(size.height, room.boardY + roomPixelHeight(room) + 90)
+      }), { width: 760, height: 560 });
+    }
+
+    function roomPixelWidth(room) {
+      return room.w * room.cell;
+    }
+
+    function roomPixelHeight(room) {
+      return room.h * room.cell;
+    }
+
+    function appendItemNode(item, room, board) {
+      const node = document.createElement("div");
+      node.className = "item" + (item.id === state.selectedId && room.id === state.activeRoomId ? " selected" : "");
+      node.dataset.id = item.id;
+      node.dataset.roomId = room.id;
+      node.style.setProperty("--x", item.x);
+      node.style.setProperty("--y", item.y);
+      node.style.setProperty("--w", item.w);
+      node.style.setProperty("--h", item.h);
+      node.style.setProperty("--z", item.z);
+      node.style.setProperty("--color", item.color);
+      node.innerHTML = "<span></span><button class=\"resize-handle\" title=\"크기 조절\" aria-label=\"크기 조절\"></button>";
+      node.querySelector("span").textContent = item.name;
+      node.addEventListener("pointerdown", (event) => startDrag(event, room.id, item.id));
+      node.querySelector(".resize-handle").addEventListener("pointerdown", (event) => startResize(event, room.id, item.id));
+      board.appendChild(node);
+    }
+
+    function renderEditor() {
+      const item = selectedItem();
+      const hasItem = Boolean(item);
+      els.emptySelection.hidden = hasItem;
+      els.editorFields.hidden = !hasItem;
+      els.selectionType.textContent = hasItem ? item.name || "이름 없음" : "없음";
+
+      if (!item) return;
+
+      els.itemName.value = item.name;
+      els.itemW.value = item.w;
+      els.itemH.value = item.h;
+      els.swatches.querySelectorAll(".swatch").forEach((button) => {
+        button.classList.toggle("active", button.title.toLowerCase() === item.color.toLowerCase());
+      });
+    }
+
+    function addRoom() {
+      const position = defaultBoardPosition(state.rooms.length);
+      const room = makeRoom("방 " + (state.rooms.length + 1), 10, 8, position.x, position.y, []);
+      state.rooms.push(room);
+      state.activeRoomId = room.id;
+      state.selectedId = null;
+      render();
+    }
+
+    function duplicateRoom() {
+      const room = activeRoom();
+      const clone = {
+        ...room,
+        id: uid(),
+        name: room.name + " 복사",
+        boardX: room.boardX + 36,
+        boardY: room.boardY + 36,
+        items: room.items.map((item) => ({ ...item, id: uid() }))
+      };
+      state.rooms.push(clone);
+      state.activeRoomId = clone.id;
+      state.selectedId = null;
+      render();
+    }
+
+    function deleteActiveRoom() {
+      if (state.rooms.length <= 1) {
+        alert("방은 최소 1개가 필요해요.");
+        return;
+      }
+
+      const room = activeRoom();
+      if (!confirm("'" + room.name + "' 방을 삭제할까요?")) return;
+      const index = state.rooms.findIndex((entry) => entry.id === room.id);
+      state.rooms = state.rooms.filter((entry) => entry.id !== room.id);
+      state.activeRoomId = state.rooms[Math.max(0, index - 1)].id;
+      state.selectedId = null;
+      render();
+    }
+
+    function addItem(preset) {
+      const room = activeRoom();
+      const size = {
+        w: clamp(Number(preset.w) || 2, 1, room.w),
+        h: clamp(Number(preset.h) || 2, 1, room.h)
+      };
+      const spot = findOpenSpot(size.w, size.h, room.items, room);
+      const item = {
+        id: uid(),
+        name: preset.name,
+        x: spot.x,
+        y: spot.y,
+        w: size.w,
+        h: size.h,
+        color: preset.color || colors[room.items.length % colors.length],
+        z: nextZ(room)
+      };
+      room.items.push(item);
+      state.selectedId = item.id;
+      render();
+    }
+
+    function findOpenSpot(w, h, items, room) {
+      for (let y = 0; y <= room.h - h; y += 1) {
+        for (let x = 0; x <= room.w - w; x += 1) {
+          const overlaps = items.some((item) => rectsOverlap({ x, y, w, h }, item));
+          if (!overlaps) return { x, y };
+        }
+      }
+      return {
+        x: Math.max(0, Math.floor((room.w - w) / 2)),
+        y: Math.max(0, Math.floor((room.h - h) / 2))
+      };
+    }
+
+    function rectsOverlap(a, b) {
+      return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    function updateSelected(patch) {
+      const room = activeRoom();
+      const item = selectedItem();
+      if (!item) return;
+      Object.assign(item, patch);
+      clampItemToRoom(item, room);
+      render();
+    }
+
+    function rotateSelected() {
+      const room = activeRoom();
+      const item = selectedItem();
+      if (!item) return;
+      const nextW = item.h;
+      const nextH = item.w;
+      item.w = nextW;
+      item.h = nextH;
+      clampItemToRoom(item, room);
+      render();
+    }
+
+    function duplicateSelected() {
+      const room = activeRoom();
+      const item = selectedItem();
+      if (!item) return;
+      const clone = {
+        ...item,
+        id: uid(),
+        x: clamp(item.x + 1, 0, room.w - item.w),
+        y: clamp(item.y + 1, 0, room.h - item.h),
+        z: nextZ(room)
+      };
+      room.items.push(clone);
+      state.selectedId = clone.id;
+      render();
+    }
+
+    function deleteSelected() {
+      const room = activeRoom();
+      if (!state.selectedId) return;
+      room.items = room.items.filter((item) => item.id !== state.selectedId);
+      state.selectedId = null;
+      render();
+    }
+
+    function moveSelected(dx, dy) {
+      const room = activeRoom();
+      const item = selectedItem();
+      if (!item) return;
+      item.x += dx;
+      item.y += dy;
+      clampItemToRoom(item, room);
+      render();
+    }
+
+    function centerSelected() {
+      const room = activeRoom();
+      const item = selectedItem();
+      if (!item) return;
+      item.x = Math.round((room.w - item.w) / 2);
+      item.y = Math.round((room.h - item.h) / 2);
+      clampItemToRoom(item, room);
+      render();
+    }
+
+    function startRoomDrag(event, roomId) {
+      const room = roomById(roomId);
+      if (!room) return;
+      event.preventDefault();
+      state.activeRoomId = room.id;
+      state.selectedId = null;
+      drag = {
+        type: "room",
+        roomId: room.id,
+        startX: event.clientX,
+        startY: event.clientY,
+        boardX: room.boardX,
+        boardY: room.boardY
+      };
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      render();
+    }
+
+    function startRoomResize(event, roomId) {
+      if (state.settings.resizeLocked) return;
+      const room = roomById(roomId);
+      if (!room) return;
+      event.stopPropagation();
+      event.preventDefault();
+      state.activeRoomId = room.id;
+      state.selectedId = null;
+      drag = {
+        type: "room-resize",
+        roomId: room.id,
+        startX: event.clientX,
+        startY: event.clientY,
+        roomW: room.w,
+        roomH: room.h
+      };
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      render();
+    }
+
+    function startDrag(event, roomId, id) {
+      if (event.target.classList.contains("resize-handle")) return;
+      const room = roomById(roomId);
+      if (!room) return;
+      const item = room.items.find((entry) => entry.id === id);
+      if (!item) return;
+      event.preventDefault();
+      state.activeRoomId = room.id;
+      state.selectedId = id;
+      item.z = nextZ(room);
+      drag = {
+        type: "move",
+        roomId: room.id,
+        id,
+        startX: event.clientX,
+        startY: event.clientY,
+        itemX: item.x,
+        itemY: item.y
+      };
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      render();
+    }
+
+    function startResize(event, roomId, id) {
+      if (state.settings.resizeLocked) return;
+      const room = roomById(roomId);
+      if (!room) return;
+      const item = room.items.find((entry) => entry.id === id);
+      if (!item) return;
+      event.stopPropagation();
+      event.preventDefault();
+      state.activeRoomId = room.id;
+      state.selectedId = id;
+      item.z = nextZ(room);
+      drag = {
+        type: "resize",
+        roomId: room.id,
+        id,
+        startX: event.clientX,
+        startY: event.clientY,
+        itemW: item.w,
+        itemH: item.h
+      };
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      render();
+    }
+
+    function onPointerMove(event) {
+      if (!drag) return;
+
+      if (drag.type === "room") {
+        const room = roomById(drag.roomId);
+        if (!room) return;
+        const rawX = Math.max(0, Math.round(drag.boardX + event.clientX - drag.startX));
+        const rawY = Math.max(0, Math.round(drag.boardY + event.clientY - drag.startY));
+        const snapped = state.settings.snapRooms ? snapRoomPosition(room, rawX, rawY) : { x: rawX, y: rawY };
+        room.boardX = snapped.x;
+        room.boardY = snapped.y;
+        render();
+        return;
+      }
+
+      const room = roomById(drag.roomId);
+      if (!room) return;
+
+      if (drag.type === "room-resize") {
+        const dx = Math.round((event.clientX - drag.startX) / room.cell);
+        const dy = Math.round((event.clientY - drag.startY) / room.cell);
+        room.w = clamp(drag.roomW + dx, 4, 24);
+        room.h = clamp(drag.roomH + dy, 4, 20);
+        room.items.forEach((item) => clampItemToRoom(item, room));
+        render();
+        return;
+      }
+
+      const item = room.items.find((entry) => entry.id === drag.id);
+      if (!item) return;
+      const dx = Math.round((event.clientX - drag.startX) / room.cell);
+      const dy = Math.round((event.clientY - drag.startY) / room.cell);
+
+      if (drag.type === "move") {
+        item.x = drag.itemX + dx;
+        item.y = drag.itemY + dy;
+      } else {
+        item.w = drag.itemW + dx;
+        item.h = drag.itemH + dy;
+      }
+
+      clampItemToRoom(item, room);
+      render();
+    }
+
+    function onPointerUp() {
+      drag = null;
+    }
+
+    function clampItemToRoom(item, room) {
+      item.w = clamp(Math.round(item.w), 1, room.w);
+      item.h = clamp(Math.round(item.h), 1, room.h);
+      item.x = clamp(Math.round(item.x), 0, Math.max(0, room.w - item.w));
+      item.y = clamp(Math.round(item.y), 0, Math.max(0, room.h - item.h));
+    }
+
+    function snapRoomPosition(room, rawX, rawY) {
+      const threshold = 14;
+      const width = room.w * room.cell;
+      const height = room.h * room.cell;
+      let nextX = rawX;
+      let nextY = rawY;
+      let bestX = threshold + 1;
+      let bestY = threshold + 1;
+
+      state.rooms.forEach((other) => {
+        if (other.id === room.id) return;
+
+        const otherLeft = other.boardX + ROOM_RECT_OFFSET_X;
+        const otherRight = otherLeft + other.w * other.cell;
+        const otherTop = other.boardY + ROOM_RECT_OFFSET_Y;
+        const otherBottom = otherTop + other.h * other.cell;
+
+        [
+          otherLeft - ROOM_RECT_OFFSET_X,
+          otherRight - ROOM_RECT_OFFSET_X,
+          otherLeft - width - ROOM_RECT_OFFSET_X,
+          otherRight - width - ROOM_RECT_OFFSET_X
+        ].forEach((candidate) => {
+          const distance = Math.abs(rawX - candidate);
+          if (distance <= threshold && distance < bestX) {
+            bestX = distance;
+            nextX = Math.max(0, Math.round(candidate));
+          }
+        });
+
+        [
+          otherTop - ROOM_RECT_OFFSET_Y,
+          otherBottom - ROOM_RECT_OFFSET_Y,
+          otherTop - height - ROOM_RECT_OFFSET_Y,
+          otherBottom - height - ROOM_RECT_OFFSET_Y
+        ].forEach((candidate) => {
+          const distance = Math.abs(rawY - candidate);
+          if (distance <= threshold && distance < bestY) {
+            bestY = distance;
+            nextY = Math.max(0, Math.round(candidate));
+          }
+        });
+      });
+
+      return { x: nextX, y: nextY };
+    }
+
+    function nextZ(room) {
+      return room.items.reduce((max, item) => Math.max(max, item.z || 0), 0) + 1;
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function exportPng() {
+      const room = activeRoom();
+      const scale = 2;
+      const margin = 44;
+      const cell = 38;
+      const canvas = document.createElement("canvas");
+      const width = room.w * cell + margin * 2;
+      const height = room.h * cell + margin * 2 + 34;
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(scale, scale);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = "#1b1f24";
+      ctx.font = "700 18px system-ui, sans-serif";
+      ctx.fillText(room.name, margin, 27);
+      ctx.font = "13px system-ui, sans-serif";
+      ctx.fillStyle = "#68707c";
+      ctx.fillText(room.w + " x " + room.h + "칸", margin + Math.min(132, room.name.length * 18 + 22), 27);
+
+      const ox = margin;
+      const oy = margin + 22;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(ox, oy, room.w * cell, room.h * cell);
+      ctx.strokeStyle = "#26343d";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(ox, oy, room.w * cell, room.h * cell);
+
+      if (room.grid) {
+        ctx.strokeStyle = "rgba(38, 52, 61, 0.14)";
+        ctx.lineWidth = 1;
+        for (let x = 1; x < room.w; x += 1) {
+          ctx.beginPath();
+          ctx.moveTo(ox + x * cell, oy);
+          ctx.lineTo(ox + x * cell, oy + room.h * cell);
+          ctx.stroke();
+        }
+        for (let y = 1; y < room.h; y += 1) {
+          ctx.beginPath();
+          ctx.moveTo(ox, oy + y * cell);
+          ctx.lineTo(ox + room.w * cell, oy + y * cell);
+          ctx.stroke();
+        }
+      }
+
+      room.items
+        .slice()
+        .sort((a, b) => a.z - b.z)
+        .forEach((item) => {
+          const x = ox + item.x * cell;
+          const y = oy + item.y * cell;
+          const w = item.w * cell;
+          const h = item.h * cell;
+          ctx.fillStyle = item.color;
+          roundRect(ctx, x, y, w, h, 6);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(20, 29, 36, 0.48)";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fillStyle = "#111820";
+          ctx.font = "700 13px system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(item.name, x + w / 2, y + h / 2, Math.max(20, w - 8));
+        });
+
+      const link = document.createElement("a");
+      link.download = room.name.replace(/[\\/:*?"<>|]/g, "_") + "-layout.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    function roundRect(ctx, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + width, y, x + width, y + height, r);
+      ctx.arcTo(x + width, y + height, x, y + height, r);
+      ctx.arcTo(x, y + height, x, y, r);
+      ctx.arcTo(x, y, x + width, y, r);
+      ctx.closePath();
+    }
+
+    async function copyJson() {
+      const text = JSON.stringify(state, null, 2);
+      try {
+        await navigator.clipboard.writeText(text);
+        els.saveStatus.textContent = "JSON 복사됨";
+      } catch (error) {
+        console.warn(error);
+        const blob = new Blob([text], { type: "application/json" });
+        const link = document.createElement("a");
+        link.download = "room-layouts.json";
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+    }
+  </script>
+</body>
+</html>
