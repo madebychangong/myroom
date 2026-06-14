@@ -626,6 +626,7 @@
         <button class="tool-button primary" id="saveBtn" title="현재 상태 저장">저장</button>
         <button class="tool-button" id="exportBtn" title="현재 방 PNG 저장">PNG</button>
         <button class="tool-button" id="jsonBtn" title="전체 방 데이터 복사">JSON</button>
+        <button class="tool-button" id="importBtn" title="JSON 데이터 가져오기">가져오기</button>
       </div>
     </header>
 
@@ -886,6 +887,7 @@
       saveBtn: document.getElementById("saveBtn"),
       exportBtn: document.getElementById("exportBtn"),
       jsonBtn: document.getElementById("jsonBtn"),
+      importBtn: document.getElementById("importBtn"),
       saveStatus: document.getElementById("saveStatus"),
       centerBtn: document.getElementById("centerBtn")
     };
@@ -1179,6 +1181,7 @@
       els.saveBtn.addEventListener("click", () => saveNow("저장됨"));
       els.exportBtn.addEventListener("click", exportPng);
       els.jsonBtn.addEventListener("click", copyJson);
+      els.importBtn.addEventListener("click", importJson);
 
       window.addEventListener("beforeunload", () => saveNow("저장됨"));
 
@@ -1810,6 +1813,47 @@
         link.href = URL.createObjectURL(blob);
         link.click();
         URL.revokeObjectURL(link.href);
+      }
+    }
+
+    async function importJson() {
+      let text = "";
+
+      try {
+        text = await navigator.clipboard.readText();
+      } catch (error) {
+        console.warn(error);
+      }
+
+      if (!text || !text.trim().startsWith("{")) {
+        text = prompt("가져올 JSON을 붙여넣어 주세요.") || "";
+      }
+
+      if (!text.trim()) return;
+
+      try {
+        const imported = JSON.parse(text);
+        if (!imported || !Array.isArray(imported.rooms)) {
+          throw new Error("rooms 배열이 없습니다.");
+        }
+
+        state.rooms = normalizeRooms(imported.rooms);
+        state.settings = {
+          snapRooms: imported.settings?.snapRooms !== false,
+          showRoomBorders: imported.settings?.showRoomBorders !== false,
+          resizeLocked: imported.settings?.resizeLocked === true
+        };
+        state.activeRoomId = imported.activeRoomId || state.rooms[0].id;
+        state.selectedId = imported.selectedId || null;
+
+        if (!activeRoom()) state.activeRoomId = state.rooms[0].id;
+        if (!selectedItem()) state.selectedId = null;
+
+        saveNow("가져오기 완료");
+        render();
+      } catch (error) {
+        console.warn(error);
+        alert("JSON을 가져오지 못했어요. 복사한 데이터가 맞는지 확인해 주세요.");
       }
     }
   </script>
